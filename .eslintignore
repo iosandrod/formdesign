@@ -3,3 +3,4 @@ dist
 external/ckeditor5/node_modules
 external/ckeditor5/build
 external/everright-filter
+packages
