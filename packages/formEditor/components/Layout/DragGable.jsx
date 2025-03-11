@@ -164,7 +164,6 @@ export default defineComponent({
               }
               if (unref(isPc)) {
                 node = (
-                  // <Selection hasWidthScale hasCopy hasDel hasDrag hasMask data={element} parent={props.data}>
                   <Selection hasWidthScale hasCopy hasDel hasDrag hasMask {...params}>
                     {
                       element.type !== 'divider'
