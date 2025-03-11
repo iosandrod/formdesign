@@ -30,7 +30,6 @@ export default {
 import { staticData } from "./testData";
 import { Editor } from "./editor";
 const emit = defineEmits(["listener"]);
-console.log(staticData.list, "testList111"); //
 const props = defineProps(
   _.merge(
     {
@@ -44,11 +43,11 @@ const props = defineProps(
       },
       delHandle: {
         type: Function,
-        default: () => {},
+        default: () => { },
       },
       copyHandle: {
         type: Function,
-        default: () => {},
+        default: () => { },
       },
       inlineMax: {
         type: Number,
@@ -69,7 +68,7 @@ const props = defineProps(
       },
       checkFieldsForNewBadge: {
         type: Function,
-        default: () => {},
+        default: () => { },
       },
     },
     defaultProps
@@ -80,14 +79,17 @@ const layout = {
   mobile: [],
 };
 const myEditor = new Editor(props);
+myEditor.setData(JSON.parse( JSON.stringify(staticData)) );//
 const form = ref("");
 const previewPlatform = ref("pc");
-const previewLoading = ref(true);
+const previewLoading = ref(true);//
 const state = myEditor.state;
 // const isFoldFields = ref(true);
 // const isFoldConfig = ref(true);
 const isFoldFields = myEditor.toSelfRef("isFoldFields");
 const isFoldConfig = myEditor.toSelfRef("isFoldConfig");
+const isShow = myEditor.toSelfRef("isShow");
+const isShowConfig = myEditor.toSelfRef("isShowConfig");
 state.validator = (target, fn) => {
   if (target) {
     const count = _.countBy(state.validateStates, "data.key");
@@ -116,76 +118,19 @@ state.validator = (target, fn) => {
 
 const { t, lang } = hooks.useI18n(props);
 const EReditorPreviewRef = ref("");
-const isShow = myEditor.toSelfRef("isShow");
-const isShowConfig = myEditor.toSelfRef("isShowConfig");
 const setSelection = (node) => {
-  let result = "";
-  if (node === "root") {
-    result = state.config;
-  } else {
-    if (node.type === "inline") {
-      result = node.columns[0];
-    } else {
-      result = node;
-    }
-  }
-  isShowConfig.value = state.selected === result;
-  state.selected = result;
-  nextTick(() => {
-    isShowConfig.value = true;
-  });
+  myEditor.setSelection(node);
 };
 setSelection(state.config);
 const addField = (node) => {
-  if (utils.checkIsField(node)) {
-    const findIndex = _.findIndex(state.fields, {
-      id: node.id,
-    });
-    if (findIndex === -1) {
-      state.fields.push(node);
-    } else {
-      state.fields.splice(findIndex, 1, node);
-    }
-  }
+  // console.log('add Fields')//
+  myEditor.addField(node);//
 };
 const delField = (node) => {
-  const fieldIndex = _.findIndex(state.fields, {
-    id: node.id,
-  });
-  if (fieldIndex !== -1) {
-    if (utils.checkIdExistInLogic(node.id, state.logic)) {
-      ElMessage({
-        showClose: true,
-        duration: 4000,
-        message: t("er.logic.logicSuggests"),
-        type: "warning",
-      });
-      utils.removeLogicDataByid(node.id, state.logic);
-    }
-    state.fields.splice(fieldIndex, 1);
-  }
+  myEditor.delField(node);
 };
 const addFieldData = (node, isCopy = false) => {
-  if (/^(radio|cascader|checkbox|select)$/.test(node.type)) {
-    if (isCopy) {
-      state.data[node.id] = _.cloneDeep(state.data[node.options.dataKey]);
-      node.options.dataKey = node.id;
-    } else {
-      if (!state.data[node.id]) {
-        node.options.dataKey = node.id;
-        state.data[node.id] = {
-          type: node.type,
-          list: utils.generateOptions(3).map((e, i) => {
-            e.label += i + 1;
-            return e;
-          }),
-        };
-      }
-    }
-  }
-  if (/^(uploadfile|signature|html)$/.test(node.type)) {
-    node.options.action = props.fileUploadURI;
-  }
+  myEditor.addFieldData(node, isCopy);
 };
 const wrapElement = (
   el,
@@ -194,135 +139,12 @@ const wrapElement = (
   sourceBlock = true,
   resetWidth = true
 ) => {
-  const node = sourceBlock
-    ? generatorData(el, isWrap, lang.value, sourceBlock, (node) => {
-        addFieldData(node);
-        addField(node);
-      })
-    : isWrap
-    ? {
-        type: "inline",
-        columns: [el],
-      }
-    : el;
-  if (!sourceBlock && resetWidth) {
-    if (utils.checkIsField(el)) {
-      if (state.platform === "pc") {
-        el.style.width.pc = "100%";
-      } else {
-        el.style.width.mobile = "100%";
-      }
-      // el.style.width = {
-      //   pc: '100%',
-      //   mobile: '100%'
-      // }
-    } else {
-      el.style.width = "100%";
-    }
-  }
-  if (isSetSelection) {
-    // nextTick(() => {
-    //   setSelection(node)
-    // })
-  }
-  return node;
+  return myEditor.wrapElement(el, isWrap, isSetSelection, sourceBlock, resetWidth);
 };
-const syncLayout = (platform, fn) => {
-  const isPc = platform === "pc";
-  const original = _.cloneDeep(state.store);
-  utils.disassemblyData2(original);
-  layout[isPc ? "mobile" : "pc"] = original;
-  if (_.isEmpty(isPc ? layout.pc : layout.mobile)) {
-    // const newData = _.cloneDeep(state.fields.map(e => wrapElement(e, true, false)))
-    const newData = state.fields
-      .filter((field) => !utils.checkIsInSubform(field))
-      .map((e) => wrapElement(e, true, false, false, false));
-    fn && fn(newData);
-  } else {
-    // debugger
-    const layoutFields = utils
-      .pickfields(isPc ? layout.pc : layout.mobile)
-      .map((e) => {
-        return {
-          id: e,
-        };
-      });
-    const copyData = _.cloneDeep(isPc ? layout.pc : layout.mobile);
-    const addFields = _.differenceBy(
-      state.fields.filter((field) => !utils.checkIsInSubform(field)),
-      layoutFields,
-      "id"
-    );
-    const delFields = _.differenceBy(layoutFields, state.fields, "id");
-    utils.repairLayout(copyData, delFields);
-    // console.log(JSON.stringify(copyData, '', 2))
-    utils.combinationData2(copyData, state.fields);
-    // console.log(JSON.stringify(copyData, '', 2))
-    copyData.push(
-      ...addFields.map((e) => wrapElement(e, true, false, false, false))
-    );
-    // copyData.push(...addFields)
-    fn && fn(copyData);
-  }
-};
-const getLayoutDataByplatform = (platform) => {
-  const isPc = platform === "pc";
-  if (_.isEmpty(isPc ? layout.pc : layout.mobile)) {
-    if (platform === state.platform) {
-      const original = _.cloneDeep(state.store);
-      utils.disassemblyData2(original);
-      return original;
-    } else {
-      const newData = _.cloneDeep(
-        state.fields
-          .filter((field) => !utils.checkIsInSubform(field))
-          .map((e) => wrapElement(e, true, false, false, false))
-      );
-      utils.disassemblyData2(newData);
-      return newData;
-    }
-  } else {
-    if (platform === state.platform) {
-      const original = _.cloneDeep(state.store);
-      utils.disassemblyData2(original);
-      layout[isPc ? "pc" : "mobile"] = original;
-    }
-    const layoutFields = utils
-      .pickfields(isPc ? layout.pc : layout.mobile)
-      .map((e) => {
-        return {
-          id: e,
-        };
-      });
-    const copyData = _.cloneDeep(isPc ? layout.pc : layout.mobile);
-    const addFields = _.cloneDeep(
-      _.differenceBy(
-        state.fields.filter((field) => !utils.checkIsInSubform(field)),
-        layoutFields,
-        "id"
-      ).map((e) => wrapElement(e, true, false, false, false))
-    );
-    const delFields = _.differenceBy(layoutFields, state.fields, "id");
-    utils.repairLayout(copyData, delFields);
-    utils.disassemblyData2(addFields);
-    copyData.push(...addFields);
-    return copyData;
-  }
-};
+
+
 const switchPlatform = (platform) => {
-  if (state.platform === platform) {
-    return false;
-  }
-  if (props.layoutType === 2) {
-    syncLayout(platform, (newData) => {
-      state.store = newData;
-      // console.log(JSON.stringify(newData, '', 2))
-      state.store.forEach((e) => {
-        utils.addContext(e, state.store);
-      });
-    });
-  }
-  state.platform = platform;
+  myEditor.switchPlatform(platform);
 };
 const canvesScrollRef = ref("");
 const fireEvent = (type, data) => {
@@ -331,15 +153,11 @@ const fireEvent = (type, data) => {
     data,
   });
 };
-const ns = hooks.useNamespace("Main", state.Namespace);
+const ns=myEditor.useHook('useNamespace', 'Main', state.Namespace)
 const getData1 = () => {
   return myEditor.getData(); //
 };
-const getData2 = () => {};
-// setTimeout(() => {
-//   let _config = JSON.parse(JSON.stringify(staticData));
-//   myEditor.setData(_config); //
-// }, 3000);
+const getData2 = () => { };//
 const getData = () => {
   return myEditor.getData();
 };
@@ -360,49 +178,21 @@ const handleOperation = (type, val) => {
       break;
     case 2:
       // state.store = []
-      layout.pc = [];
-      layout.mobile = [];
-      state.fields.splice(0);
-      state.store.splice(0);
-      state.data = {};
-      setSelection("root");
+      myEditor.clearState();
       break;
     case 3:
       //预览
-      state.previewVisible = true;
-      previewLoading.value = true;
-      nextTick(() => {
-        EReditorPreviewRef.value.setData(getData());
-        nextTick(() => {
-          previewLoading.value = false;
-        });
-      });
+
       break;
     case 4:
-      fireEvent("save", getData());
       break;
-    // case 5:
-    //   isFoldFields.value = !isFoldFields.value;
-    //   break;
-    // case 6:
-    //   isFoldConfig.value = !isFoldConfig.value;
-    //   break;
     case 7:
-      previewLoading.value = true;
-      previewPlatform.value = val;
-      EReditorPreviewRef.value.switchPlatform(val);
-      EReditorPreviewRef.value.setData(getData());
-      nextTick(() => {
-        nextTick(() => {
-          previewLoading.value = false;
-        });
-      });
+      //处理预览相关
       break;
   }
 };
-// console.log(state.selected)
 watch(
-  () => state.selected,
+  () => state.selected,//这个是当前的选择的
   (newVal) => {
     fireEvent("changeParams", _.cloneDeep(newVal));
   },
@@ -411,8 +201,8 @@ watch(
     immediate: true,
   }
 );
-const onClickOutside = () => {};
-provide("Everright", {
+const onClickOutside = () => { };
+let obj = {
   state,
   setSelection,
   props,
@@ -425,79 +215,46 @@ provide("Everright", {
   fireEvent,
   getData,
   form,
-});
+}
+provide("Everright", obj);
+provide('editor', myEditor);
 </script>
 <template>
   <el-container :class="[ns.b()]" direction="vertical">
     <el-container>
-      <!-- <FieldsPanel v-show="isFoldFields" /> -->
+      <FieldsPanel v-show="isFoldFields" />
       <el-container :class="[ns.e('container')]">
         <el-header :class="[ns.e('operation')]">
           <div>
-            <Icon
-              @click="handleOperation(4)"
-              :class="[ns.e('icon')]"
-              icon="save"
-            ></Icon>
-            <Icon
-              v-if="isShowClear"
-              @click="handleOperation(2)"
-              :class="[ns.e('icon')]"
-              icon="clear0"
-            ></Icon>
+            <Icon @click="handleOperation(4)" :class="[ns.e('icon')]" icon="save"></Icon>
+            <Icon v-if="isShowClear" @click="handleOperation(2)" :class="[ns.e('icon')]" icon="clear0"></Icon>
             <slot name="operation-left"></slot>
           </div>
           <div>
-            <DeviceSwitch
-              :modelValue="state.platform"
-              @update:modelValue="(val) => switchPlatform(val)"
-            ></DeviceSwitch>
+            <DeviceSwitch :modelValue="state.platform" @update:modelValue="(val) => switchPlatform(val)"></DeviceSwitch>
           </div>
           <div>
             <slot name="operation-right"></slot>
-            <el-dropdown
-              v-if="isShowI18n"
-              @command="(command) => fireEvent('lang', command)"
-            >
+            <el-dropdown v-if="isShowI18n" @command="(command) => fireEvent('lang', command)">
               <Icon :class="[ns.e('icon')]" icon="language"></Icon>
               <template #dropdown>
                 <el-dropdown-menu>
-                  <el-dropdown-item command="zh-cn" :disabled="lang === 'zh-cn'"
-                    >中文</el-dropdown-item
-                  >
-                  <el-dropdown-item command="en" :disabled="lang === 'en'"
-                    >English</el-dropdown-item
-                  >
+                  <el-dropdown-item command="zh-cn" :disabled="lang === 'zh-cn'">中文</el-dropdown-item>
+                  <el-dropdown-item command="en" :disabled="lang === 'en'">English</el-dropdown-item>
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
-            <Icon
-              @click="handleOperation(3)"
-              :class="[ns.e('icon')]"
-              icon="preview"
-            ></Icon>
+            <Icon @click="handleOperation(3)" :class="[ns.e('icon')]" icon="preview"></Icon>
           </div>
         </el-header>
-        <CanvesPanel
-          v-click-outside="onClickOutside"
-          v-if="isShow"
-          :data="state.store"
-        ></CanvesPanel>
-        <!-- <Icon
-          @click="handleOperation(5)"
-          :class="[ns.e('arrowLeft'), !isFoldFields && ns.is('close')]"
-          icon="arrowLeft"
-        ></Icon>
-        <Icon
-          @click="handleOperation(6)"
-          :class="[ns.e('arrowRight'), !isFoldConfig && ns.is('close')]"
-          icon="arrowRight"
-        ></Icon> -->
+        <CanvesPanel v-click-outside="onClickOutside" v-if="isShow" :data="state.store"></CanvesPanel>
+        <Icon @click="handleOperation(5)" :class="[ns.e('arrowLeft'), !isFoldFields && ns.is('close')]"
+          icon="arrowLeft"></Icon>
+        <Icon @click="handleOperation(6)" :class="[ns.e('arrowRight'), !isFoldConfig && ns.is('close')]"
+          icon="arrowRight">
+        </Icon>
       </el-container>
-      <!-- <ConfigPanel
-        v-show="isFoldConfig"
-        v-if="isShow && isShowConfig"
-      ></ConfigPanel> -->
+      <ConfigPanel v-show="isFoldConfig"></ConfigPanel>
     </el-container>
   </el-container>
 </template>

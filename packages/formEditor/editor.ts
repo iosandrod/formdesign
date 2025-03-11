@@ -1,9 +1,13 @@
 import _ from 'lodash'
 import _utils from "../utils/index";
 import { nextTick, reactive, toRef } from 'vue';
-let utils: any = _utils
 import { globalConfig, fieldsConfig } from './editorData'
 import { Node, fieldNode, listNode } from './node'
+import _hooks from '../hooks/index'
+import _locale from '../formEditor/locale'
+let locale: any = _locale//
+let utils: any = _utils
+let hooks: any = _hooks
 export class Base {
   constructor(config?: any) {
     return reactive(this)
@@ -12,6 +16,8 @@ export class Base {
 export class Editor extends Base {
   isFoldFields: Boolean = true
   isFoldConfig: Boolean = true
+  lang = 'zh-cn'
+  t: any
   state: any = {
     store: [],
     selected: {},
@@ -24,17 +30,20 @@ export class Editor extends Base {
     data: {},
     validateStates: [],
     fields: [],
-    Namespace: "formEditor",
+    Namespace: "formEditor",//@ts-ignore
     logic: {},
     othersFiles: {},
   }
-  isShow: Boolean = false
-  isShowConfig: Boolean = false
+  isShow: Boolean = true
+  isShowConfig: Boolean = true
   props: any = {}
   constructor(config) {
     super()
     this.props = config || {}
     this.state.config = config.globalConfig
+    const { t, lang } = hooks.useI18n(this.props)
+    this.lang = lang
+    this.t = t
   }
   addField(node) {
     let state = this.state
@@ -96,7 +105,63 @@ export class Editor extends Base {
       node.options.action = props.fileUploadURI;
     }
   }
+  generatorData(node, isWrap = true, lang = 'zh-cn', isCreateLabel = true, eachBack) {
+    const newNode = isWrap
+      ? {
+        type: 'inline',
+        columns: [
+          node
+        ]
+      }
+      : node
+    const result = utils.wrapElement(newNode, eachBack && eachBack)
+    if (isCreateLabel) {
+      node.label = utils.transferData(lang, utils.transferLabelPath(node), locale)
+      // if (/^(input|textarea|number|radio|checkbox|select|time|date|rate|switch|slider|html|cascader|uploadfile|signature|region)$/.test()) {}
+      if (/^(select|cascader|region|date|time)$/.test(node.type)) {
+        node.options.placeholder = utils.transferData(lang, 'er.validateMsg.placeholder2', locale)
+      }
+      if (/^(select|checkbox|radio)$/.test(node.type)) {
+        node.options.otherPlaceholder = utils.transferData(lang, 'er.validateMsg.placeholder3', locale)
+      }
+      if (/^(input|textarea|html)$/.test(node.type)) {
+        node.options.placeholder = utils.transferData(lang, 'er.validateMsg.placeholder1', locale)
+      }
+      // node.options.placeholder
+    }
+    return result
+  }
   wrapElement(el, isWrap = true, isSetSelection = true, sourceBlock = true, resetWidth = true) {
+    let lang = this.lang
+    let state = this.state
+    const node = sourceBlock
+      ? this.generatorData(el, isWrap, lang, sourceBlock, (node) => {
+        this.addFieldData(node);
+        this.addField(node);
+      })
+      : isWrap
+        ? {
+          type: "inline",
+          columns: [el],
+        }
+        : el;
+    if (!sourceBlock && resetWidth) {
+      if (utils.checkIsField(el)) {
+        if (state.platform === "pc") {
+          el.style.width.pc = "100%";
+        } else {
+          el.style.width.mobile = "100%";
+        }
+      } else {
+        el.style.width = "100%";
+      }
+    }
+    if (isSetSelection) {
+      // nextTick(() => {
+      //   setSelection(node)
+      // })
+    }
+    return node;
   }
   setData(data: any) {
     let state = this.state
@@ -113,7 +178,7 @@ export class Editor extends Base {
       utils.addContext(e, state.store);
     });
     nextTick(() => {
-      this.isShow = true;//
+      this.isShow = true;
     });
   }
   setSelection(node) {
@@ -165,7 +230,25 @@ export class Editor extends Base {
     }
   }
   clearState() {
+    let state = this.state//
+    state.fields.splice(0);
+    state.store.splice(0);
+    state.data = {};
+    this.setSelection("root");
+  }
+  emitEvent(type, data) {
+    //处理外部事件
+  }
+  switchPlatform(platform) {
     let state = this.state
+    state.platform = platform//
+  }
+  useHook(hookName, ...args) {
+    let hook = hooks[hookName]
+    if (hook == null && typeof hookName !== 'function') {
+      return null
+    }
+    return hook(...args)//
   }
 }
 

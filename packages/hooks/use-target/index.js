@@ -2,22 +2,11 @@ import { defineProps, ref, reactive, computed, provide, getCurrentInstance, inje
 import _ from 'lodash-es'
 import utils from '@ER/utils'
 export const useTarget = () => {
-  // const Instance = getCurrentInstance()
-  // const {
-  //   type: {
-  //     name
-  //   }
-  // } = Instance
   const {
     state,
     setSelection,
     props
   } = inject('Everright')
-  // onBeforeUnmount(() => {
-  //   state.children.splice(state.children.indexOf(Instance), 1)
-  // })
-  // state.children.push(Instance)
-  // console.log(props.checkTypeBySelected)
   const selection = computed(() => {
     return state.selected
   })
@@ -61,10 +50,6 @@ export const useTarget = () => {
         result = nodes.includes(type.value)
       }
     }
-    // props.checkTypeBySelected
-    // if (!unref(isSelectRoot)) {
-    //   result = nodes.includes(type.value)
-    // }
     return result
   }
   const isSelectGrid = computed({

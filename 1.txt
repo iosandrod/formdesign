@@ -162,3 +162,96 @@ const handleListener = async ({ type, data }) => {
       </div>
     </el-scrollbar>
   </el-dialog>
+
+
+ state.previewVisible = true;
+      previewLoading.value = true;
+      nextTick(() => {
+        EReditorPreviewRef.value.setData(getData());
+        nextTick(() => {
+          previewLoading.value = false;
+        });
+      });
+
+
+const getLayoutDataByplatform = (platform) => {
+  const isPc = platform === "pc";
+  if (_.isEmpty(isPc ? layout.pc : layout.mobile)) {
+    if (platform === state.platform) {
+      const original = _.cloneDeep(state.store);
+      utils.disassemblyData2(original);
+      return original;
+    } else {
+      const newData = _.cloneDeep(
+        state.fields
+          .filter((field) => !utils.checkIsInSubform(field))
+          .map((e) => wrapElement(e, true, false, false, false))
+      );
+      utils.disassemblyData2(newData);
+      return newData;
+    }
+  } else {
+    if (platform === state.platform) {
+      const original = _.cloneDeep(state.store);
+      utils.disassemblyData2(original);
+      layout[isPc ? "pc" : "mobile"] = original;
+    }
+    const layoutFields = utils
+      .pickfields(isPc ? layout.pc : layout.mobile)
+      .map((e) => {
+        return {
+          id: e,
+        };
+      });
+    const copyData = _.cloneDeep(isPc ? layout.pc : layout.mobile);
+    const addFields = _.cloneDeep(
+      _.differenceBy(
+        state.fields.filter((field) => !utils.checkIsInSubform(field)),
+        layoutFields,
+        "id"
+      ).map((e) => wrapElement(e, true, false, false, false))
+    );
+    const delFields = _.differenceBy(layoutFields, state.fields, "id");
+    utils.repairLayout(copyData, delFields);
+    utils.disassemblyData2(addFields);
+    copyData.push(...addFields);
+    return copyData;
+  }
+};
+
+
+const syncLayout = (platform, fn) => {
+  const isPc = platform === "pc";
+  const original = _.cloneDeep(state.store);
+  utils.disassemblyData2(original);
+  layout[isPc ? "mobile" : "pc"] = original;
+  if (_.isEmpty(isPc ? layout.pc : layout.mobile)) {
+    // const newData = _.cloneDeep(state.fields.map(e => wrapElement(e, true, false)))
+    const newData = state.fields
+      .filter((field) => !utils.checkIsInSubform(field))
+      .map((e) => wrapElement(e, true, false, false, false));
+    fn && fn(newData);
+  } else {
+    // debugger
+    const layoutFields = utils
+      .pickfields(isPc ? layout.pc : layout.mobile)
+      .map((e) => {
+        return {
+          id: e,
+        };
+      });
+    const copyData = _.cloneDeep(isPc ? layout.pc : layout.mobile);
+    const addFields = _.differenceBy(
+      state.fields.filter((field) => !utils.checkIsInSubform(field)),
+      layoutFields,
+      "id"
+    );
+    const delFields = _.differenceBy(layoutFields, state.fields, "id");
+    utils.repairLayout(copyData, delFields);
+    utils.combinationData2(copyData, state.fields);
+    copyData.push(
+      ...addFields.map((e) => wrapElement(e, true, false, false, false))
+    );
+    fn && fn(copyData);
+  }
+};

@@ -6,7 +6,7 @@ let prevSortable = ''
 let inserRowIndex = ''
 // let prevRows = ''
 let inserColIndex = ''
-function getWindowScrollingElement () {
+function getWindowScrollingElement() {
   const scrollingElement = document.scrollingElement
 
   if (scrollingElement) {
@@ -15,7 +15,7 @@ function getWindowScrollingElement () {
     return document.documentElement
   }
 }
-function getParentAutoScrollElement (el, includeSelf) {
+function getParentAutoScrollElement(el, includeSelf) {
   // skip to window
   if (!el || !el.getBoundingClientRect) return getWindowScrollingElement()
 
@@ -52,7 +52,7 @@ const getOffset = (el, key) => {
 
   return offset
 }
-function matches (/** HTMLElement */el, /** String */selector) {
+function matches(/** HTMLElement */el, /** String */selector) {
   if (!selector) return
 
   selector[0] === '>' && (selector = selector.substring(1))
@@ -73,7 +73,7 @@ function matches (/** HTMLElement */el, /** String */selector) {
 
   return false
 }
-function css (el, prop, val) {
+function css(el, prop, val) {
   const style = el && el.style
 
   if (style) {
@@ -95,7 +95,7 @@ function css (el, prop, val) {
     }
   }
 }
-function lastChild (el, selector) {
+function lastChild(el, selector) {
   let last = el.lastElementChild
   // eslint-disable-next-line
   while (last && (css(last, 'display') === 'none' || selector && !matches(last, selector))) {
@@ -308,13 +308,13 @@ const resetStates = () => {
   }
   prevEl = prevSortable = inserColIndex = inserRowIndex = ''
 }
-function ControlInsertionPlugin (ER) {
-  function ControlInsertion (sortable) {
+function ControlInsertionPlugin(ER) {
+  function ControlInsertion(sortable) {
   }
   ControlInsertion.prototype = {
-    dragStart (e) {
+    dragStart(e) {
     },
-    drop (e) {
+    drop(e) {
       if (!prevEl || !e.activeSortable) {
         return false
       }
@@ -328,11 +328,6 @@ function ControlInsertionPlugin (ER) {
       if (!isBlock) {
         if (oldEl.context) {
           oldEl.context.delete()
-          // utils.deepTraversal(oldEl, (node) => {
-          //   if (utils.checkIsField(node) && node.type !== 'subform') {
-          //     ER.delField(node)
-          //   }
-          // })
         }
       }
       if (inserRowIndex !== '') {
@@ -372,7 +367,7 @@ function ControlInsertionPlugin (ER) {
       }
       resetStates()
     },
-    dragOver (e) {
+    dragOver(e) {
       // e.originalEvent && e.originalEvent.stopPropagation()
       e.cancel()
       resetStates()

@@ -2,6 +2,7 @@ import { defineComponent, resolveComponent, watch, useAttrs, defineAsyncComponen
 import Selection from '@ER/formEditor/components/Selection/selectElement.jsx'
 import LayoutDragGable from './DragGable.jsx'
 import hooks from '@ER/hooks'
+
 export default defineComponent({
   name: 'TabsLayout',
   inheritAttrs: false,

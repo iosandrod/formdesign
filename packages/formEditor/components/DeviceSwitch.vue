@@ -14,22 +14,13 @@ const props = defineProps({
   }
 })
 const emit = defineEmits(['update:modelValue'])
-// const ER = inject('Everright')
-const ns = hooks.useNamespace('DeviceSwitch')
-// const {
-//   state
-// } = hooks.useTarget()
-// const element = ref('')
-// defineExpose({
-//   $el: element
-// })
+const editor= inject('editor')
+let ns=editor.useHook('useNamespace', 'DeviceSwitch')//
 </script>
 <template>
   <div :class="[ns.b()]">
     <Icon @click="() => emit('update:modelValue', 'pc')" icon="PC" :class="[ns.e('icon'), props.modelValue === 'pc' && 'active']"></Icon>
     <Icon @click="() => emit('update:modelValue', 'mobile')" icon="cellphone" :class="[ns.e('icon'), props.modelValue === 'mobile' && 'active']"></Icon>
-<!--    <Icon @click="() => ER.switchPlatform('pc')" icon="PC" :class="[ns.e('icon'), state.platform === 'pc' && 'active']"></Icon>-->
-<!--    <Icon @click="() => ER.switchPlatform('mobile')" icon="cellphone" :class="[ns.e('icon'), state.platform === 'mobile' && 'active']"></Icon>-->
   </div>
 </template>
 

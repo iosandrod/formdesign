@@ -5,12 +5,13 @@ import CompleteButton from '@ER/formEditor/components/CompleteButton.vue'
 import hooks from '@ER/hooks'
 import _ from 'lodash-es'
 export default defineComponent({
-  name: 'Canves',
+  name: 'Canves/.',
   inheritAttrs: false,
   customOptions: {},
-  setup () {
+  setup() {
     const ER = inject('Everright')
     const ns = hooks.useNamespace('Canves')
+    console.log(ER, 'testER')//
     const {
       state,
       setSelection,
@@ -28,10 +29,10 @@ export default defineComponent({
         <div>
           <TagComponent ref={ER.form} onClick={unref(isEditModel) && handleClick} {...typeProps.value}>
             {
-              unref(isEditModel) ? Layout : Layout
+              Layout
             }
           </TagComponent>
-          {!unref(isEditModel) && !_.isEmpty(state.config) && ER.props.isShowCompleteButton && <CompleteButton handle={ER.form}/>}
+          {!unref(isEditModel) && !_.isEmpty(state.config) && ER.props.isShowCompleteButton && <CompleteButton handle={ER.form} />}
         </div>
       )
     }
@@ -48,14 +49,14 @@ export default defineComponent({
             ]}>
           {unref(isEditModel)
             ? (
-            <div class={[ns.e('container')]}>
-              <el-scrollbar ref={ER.canvesScrollRef}>
-                <div class={[ns.e('subject')]}>
-                  {renderContent()}
-                </div>
-              </el-scrollbar>
-            </div>
-              )
+              <div class={[ns.e('container')]}>
+                <el-scrollbar ref={ER.canvesScrollRef}>
+                  <div class={[ns.e('subject')]}>
+                    {renderContent()}
+                  </div>
+                </el-scrollbar>
+              </div>
+            )
             : renderContent()}
         </ElMain>
       )

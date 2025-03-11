@@ -31,7 +31,7 @@ const dragGableWrap = defineComponent({
   components: {
     DragGable
   },
-  setup (props) {
+  setup(props) {
     const {
       isEditModel
     } = hooks.useTarget()
@@ -87,7 +87,7 @@ export default defineComponent({
       type: String
     }
   },
-  setup (props) {
+  setup(props) {
     const ER = inject('Everright')
     const isInline = props.type === 'inline'
     const ns = hooks.useNamespace('DragGableLayout')
@@ -115,7 +115,7 @@ export default defineComponent({
         componentMap = {}
       })
       return {
-        findComponent (type, element) {
+        findComponent(type, element) {
           let info = componentMap[type + element]
           if (!info) {
             info = componentMap[type + element] = defineAsyncComponent(() => import(`../${type}/${_.startCase(element)}/${state.platform}.vue`))
@@ -165,7 +165,7 @@ export default defineComponent({
               if (unref(isPc)) {
                 node = (
                   // <Selection hasWidthScale hasCopy hasDel hasDrag hasMask data={element} parent={props.data}>
-                  <Selection hasWidthScale hasCopy hasDel hasDrag hasMask { ...params }>
+                  <Selection hasWidthScale hasCopy hasDel hasDrag hasMask {...params}>
                     {
                       element.type !== 'divider'
                         ? (<el-form-item
@@ -179,7 +179,7 @@ export default defineComponent({
                 )
               } else {
                 node = (
-                  <Selection hasWidthScale hasCopy hasDel hasDrag hasMask { ...params }>
+                  <Selection hasWidthScale hasCopy hasDel hasDrag hasMask {...params}>
                     <TypeComponent data={element} params={typeProps.value}></TypeComponent>
                   </Selection>
                 )
@@ -189,7 +189,7 @@ export default defineComponent({
         }
         return node
       },
-      footer () {
+      footer() {
         let node = ''
         if (_.isEmpty(props.data)) {
           if (!props.isRoot) {
