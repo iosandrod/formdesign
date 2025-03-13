@@ -20,10 +20,6 @@ const props = defineProps({
     type: String,
     required: true
   }
-  // mode: {
-  //   type: Number,
-  //   default: 1
-  // }
 })
 </script>
 <template>
@@ -32,13 +28,5 @@ const props = defineProps({
     <template v-if="$slots.default">
       <div :class="[ns.e('slot')]" v-show="target.options[field]"><slot></slot></div>
     </template>
-<!--    <template v-if="mode === 1">-->
-<!--      <template v-if="$slots.default">-->
-<!--        <div :class="[ns.e('slot')]" v-show="target.options[field]"><slot></slot></div>-->
-<!--      </template>-->
-<!--    </template>-->
-<!--    <template v-else>-->
-<!--      <div :class="[ns.e('slot')]"><slot></slot></div>-->
-<!--    </template>-->
   </div>
 </template>

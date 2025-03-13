@@ -1,222 +1,121 @@
-import {
-  defineComponent,
-  resolveComponent,
-  watch,
-  useAttrs,
-  useSlots,
-  defineAsyncComponent,
-  unref,
-  nextTick,
-  ref,
-  inject,
-  reactive
-} from 'vue'
-import { isHTMLTag } from '@vue/shared'
+import { defineComponent, resolveComponent, useAttrs, useSlots, unref, inject } from 'vue'
 import DragGable from 'vuedraggable'
-import utils from '@ER/utils'
-import hooks from '@ER/hooks'
 import _ from 'lodash-es'
+import hooks from '@ER/hooks'
 import LayoutGridLayout from './GridLayout'
 import LayoutTabsLayout from './TabsLayout'
 import LayoutCollapseLayout from './CollapseLayout'
 import LayoutTableLayout from './TableLayout'
 import LayoutInlineLayout from './InlineLayout'
 import LayoutSubformLayout from './SubformLayout'
+import { defineAsyncComponent } from 'vue'
 import Selection from '@ER/formEditor/components/Selection/selectElement.jsx'
 import ControlInsertionPlugin from './ControlInsertionPlugin'
+import { isHTMLTag } from '@vue/shared'
+
 const dragGableWrap = defineComponent({
   inheritAttrs: false,
   name: 'customDragGable',
-  customOptions: {},
-  components: {
-    DragGable
-  },
-  setup(props) {
-    const {
-      isEditModel
-    } = hooks.useTarget()
+  components: { DragGable },
+  setup() {
+    const { isEditModel } = hooks.useTarget()
     return () => {
       const attrs = useAttrs()
-      let node = ''
-      if (unref(isEditModel)) {
-        node = (
-          <dragGable
-            {...attrs}>
-            {useSlots()}
-          </dragGable>
-        )
+      let _tag = attrs.tag
+      let TagComponent = null // resolve the component before rendering
+      if (isHTMLTag(_tag)) {
+        TagComponent = _tag
       } else {
-        const tag = isHTMLTag(attrs.tag) ? attrs.tag : resolveComponent(attrs.tag)
-        const {
-          item
-        } = useSlots()
-        node = (
-          <tag {...attrs.componentData}>
-            {attrs.list.map(e => {
-              return item({
-                element: e
-              })
-            })}
-          </tag>
-        )
+        TagComponent = resolveComponent(attrs.tag)
       }
+      const node = unref(isEditModel)
+        ? <dragGable {...attrs}>{useSlots()}</dragGable>
+        : <TagComponent {...attrs.componentData}>
+          {attrs.list.map(e => useSlots().item({ element: e }))}
+        </TagComponent>
       return node
     }
   }
 })
+
 export {
   dragGableWrap
 }
+
 export default defineComponent({
   name: 'DragGableLayout',
-  components: {
-    // DragGable
-  },
   props: {
-    isRoot: {
-      type: Boolean,
-      default: false
-    },
+    isRoot: { type: Boolean, default: false },
     data: Object,
     parent: Object,
-    tag: {
-      type: String,
-      default: 'div'
-    },
-    type: {
-      type: String
-    }
+    tag: { type: String, default: 'div' },
+    type: String
   },
   setup(props) {
     const ER = inject('Everright')
-    const isInline = props.type === 'inline'
+    const { state, isEditModel, isPc } = hooks.useTarget()
     const ns = hooks.useNamespace('DragGableLayout')
-    const {
-      state,
-      isEditModel,
-      isPc,
-      setSelection
-    } = hooks.useTarget()
-    const handleMove = (e) => {
-      return true
-    }
+
     const dragOptions = {
       swapThreshold: 1,
-      group: {
-        name: 'er-Canves'
-      },
+      group: { name: 'er-Canves' },
       parent: props.parent,
       plugins: [ControlInsertionPlugin(ER)],
       ControlInsertion: true
     }
-    const loadComponent = () => {
-      let componentMap = {}
-      watch(() => state.platform, () => {
-        componentMap = {}
-      })
-      return {
-        findComponent(type, element) {
-          let info = componentMap[type + element]
-          if (!info) {
-            info = componentMap[type + element] = defineAsyncComponent(() => import(`../${type}/${_.startCase(element)}/${state.platform}.vue`))
-          }
-          return info
-        }
+
+    const componentMap = {}
+
+    const findComponent = (type, element) => {
+      const key = `${type}${element}`
+      if (!componentMap[key]) {
+        componentMap[key] = defineAsyncComponent(() => import(`../${type}/${_.startCase(element)}/${state.platform}.vue`))
       }
+      return componentMap[key]
     }
-    const load = loadComponent()
+
     const slots = {
       item: ({ element }) => {
-        let node = ''
-        switch (element.type) {
-          case 'grid':
-            node = (<LayoutGridLayout key={element.id} data={element} parent={props.data}></LayoutGridLayout>)
-            break
-          case 'table':
-            node = (<LayoutTableLayout key={element.id} data={element} parent={props.data}></LayoutTableLayout>)
-            break
-          case 'tabs':
-            node = (<LayoutTabsLayout key={element.id} data={element} parent={props.data}></LayoutTabsLayout>)
-            break
-          case 'collapse':
-            node = (<LayoutCollapseLayout key={element.id} data={element} parent={props.data}></LayoutCollapseLayout>)
-            break
-          case 'inline':
-            node = (<LayoutInlineLayout key={element.id} data={element} parent={props.data}></LayoutInlineLayout>)
-            break
-          case 'subform':
-            if (unref(isEditModel) || _.get(state.fieldsLogicState.get(element), 'visible', undefined) !== 0) {
-              node = (<LayoutSubformLayout key={element.id} data={element} parent={props.data}></LayoutSubformLayout>)
-            }
-            break
-          default:
-            let TypeComponent = ''
-            if (unref(isEditModel) || _.get(state.fieldsLogicState.get(element), 'visible', undefined) !== 0) {
-              const typeProps = hooks.useProps(state, element, unref(isPc))
-              TypeComponent = load.findComponent('FormTypes', element.type)
-              const params = {
-                data: element,
-                parent: props.data,
-                key: element.id
-              }
-              if (process.env.NODE_ENV === 'test') {
-                params['data-field-id'] = `${element.id}`
-              }
-              if (unref(isPc)) {
-                node = (
-                  <Selection hasWidthScale hasCopy hasDel hasDrag hasMask {...params}>
-                    {
-                      element.type !== 'divider'
-                        ? (<el-form-item
-                          {...typeProps.value}
-                        >
-                          <TypeComponent data={element} params={typeProps.value}></TypeComponent>
-                        </el-form-item>)
-                        : <TypeComponent data={element} params={typeProps.value}></TypeComponent>
-                    }
-                  </Selection>
-                )
-              } else {
-                node = (
-                  <Selection hasWidthScale hasCopy hasDel hasDrag hasMask {...params}>
-                    <TypeComponent data={element} params={typeProps.value}></TypeComponent>
-                  </Selection>
-                )
-              }
-            }
-            break
+        if (element.type === 'subform' && (unref(isEditModel) || _.get(state.fieldsLogicState.get(element), 'visible') === 0)) return null
+        const LayoutMap = {
+          grid: LayoutGridLayout,
+          table: LayoutTableLayout,
+          tabs: LayoutTabsLayout,
+          collapse: LayoutCollapseLayout,
+          inline: LayoutInlineLayout
+        }
+        let node
+        if (LayoutMap[element.type]) {
+          const LayoutComponent = LayoutMap[element.type]
+          node = <LayoutComponent key={element.id} data={element} parent={props.data} />
+        } else {
+          const TypeComponent = findComponent('FormTypes', element.type)
+          const typeProps = hooks.useProps(state, element, unref(isPc))
+          node = (
+            <Selection hasWidthScale hasCopy hasDel hasDrag hasMask data={element} parent={props.data} key={element.id}>
+              <el-form-item {...typeProps.value}>
+                <TypeComponent data={element} params={typeProps.value} />
+              </el-form-item>
+            </Selection>
+          )
         }
         return node
       },
-      footer() {
-        let node = ''
-        if (_.isEmpty(props.data)) {
-          if (!props.isRoot) {
-            node = (
-              <div class={ns.e('dropHere')}>
-                Drop here
-              </div>
-            )
-          }
-        }
-        return node
-      }
+      footer: () => (!_.isEmpty(props.data) || props.isRoot) ? '' : <div class={ns.e('dropHere')}>Drop here</div>
     }
-    return () => {
-      return (
-        <dragGableWrap
-          list={props.data}
-          handle=".ER-handle"
-          class={[ns.b(), unref(isEditModel) && ns.e('edit')]}
-          tag={props.tag}
-          item-key="id"
-          move={handleMove}
-          {...dragOptions}
-          v-slots={slots}
-          componentData={useAttrs()}
-        >
-        </dragGableWrap>
-      )
-    }
+
+    return () => (
+      <dragGableWrap
+        list={props.data}
+        handle=".ER-handle"
+        class={[ns.b(), unref(isEditModel) && ns.e('edit')]}
+        tag={props.tag}
+        item-key="id"
+        move={() => true}
+        {...dragOptions}
+        v-slots={slots}
+        componentData={useAttrs()}
+      />
+    )
   }
 })

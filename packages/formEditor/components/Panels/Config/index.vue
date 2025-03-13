@@ -70,20 +70,6 @@ const validator = (rule, value, callback) => {
       fn(1)
     }
   }
-
-  // if (newValue === '' || newValue === null || newValue === undefined) {
-  //   callback(new Error('必填'))
-  //   return false
-  // } else {
-  //   state.validator(newValue, (valid) => {
-  //     if (valid) {
-  //       callback()
-  //     } else {
-  //       callback(new Error('重复'))
-  //     }
-  //   })
-  //
-  // }
 }
 onMounted(() => {
   form.value.validate()

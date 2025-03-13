@@ -1,109 +1,43 @@
-import { defineProps, ref, reactive, computed, provide, getCurrentInstance, inject, onBeforeUnmount, unref } from 'vue'
+import { computed, inject } from 'vue'
 import _ from 'lodash-es'
 import utils from '@ER/utils'
+
 export const useTarget = () => {
-  const {
-    state,
-    setSelection,
-    props
-  } = inject('Everright')
-  const selection = computed(() => {
-    return state.selected
-  })
-  const isSelectAnyElement = computed({
-    get () {
-      return state.selected !== state.config
-    }
-  })
-  const isSelectRoot = computed({
-    get () {
-      return state.selected === state.config
-    }
-  })
-  const type = computed(() => {
-    return state.selected.type
-  })
-  const isSelectField = computed({
-    get () {
-      // return utils.checkIsField(type.value)
-      return utils.checkIsField(state.selected)
-    }
-  })
-  const target = computed({
-    get () {
-      return state.selected
-    }
-  })
-  const col = computed({
-    get () {
-      return !_.isEmpty(state.selected) && state.selected.context.col
-    }
-  })
+  const { state, setSelection, props } = inject('Everright')
+  const selection = computed(() => state.selected)
+  const isSelectRoot = computed(() => state.selected === state.config)
+  const isSelectAnyElement = computed(() => !isSelectRoot.value)
+  const type = computed(() => state.selected?.type)
+  const isSelectField = computed(() => utils.checkIsField(state.selected))
+  const target = computed(() => state.selected)
+  const col = computed(() => !_.isEmpty(state.selected) && state.selected.context?.col)
+  const isPc = computed(() => state.platform === 'pc')
+  const isEditModel = computed(() => /^(edit|config)$/.test(state.mode))
   const checkTypeBySelected = (nodes = [], propType) => {
-    let result = false
-    if (!_.isEmpty(state.selected)) {
-      if (type.value) {
-        const fn = props.checkPropsBySelected(state.selected, propType)
-        // console.log(fn !== undefined ? fn : nodes.includes(type.value))
-        result = fn !== undefined ? fn : nodes.includes(type.value)
-      } else {
-        result = nodes.includes(type.value)
-      }
-    }
-    return result
+    if (_.isEmpty(state.selected)) return false
+    return props.checkPropsBySelected(state.selected, propType) ?? nodes.includes(type.value)
   }
-  const isSelectGrid = computed({
-    get () {
-      return checkTypeBySelected(['grid'])
-    }
-  })
-  const isSelectTabs = computed({
-    get () {
-      return checkTypeBySelected(['tabs'])
-    }
-  })
-  const isSelectCollapse = computed({
-    get () {
-      return checkTypeBySelected(['collapse'])
-    }
-  })
-  const isSelectTable = computed({
-    get () {
-      return checkTypeBySelected(['table'])
-    }
-  })
-  const isPc = computed({
-    get () {
-      return state.platform === 'pc'
-    }
-  })
-  const isEditModel = computed({
-    get () {
-      return /^(edit|config)$/.test(state.mode)
-    }
-  })
-  const isSelectSubform = computed({
-    get () {
-      return checkTypeBySelected(['subform'])
-    }
-  })
+  const selectionTypes = ['grid', 'tabs', 'collapse', 'table', 'subform']
+  const [isSelectGrid, isSelectTabs, isSelectCollapse, isSelectTable, isSelectSubform] =
+    selectionTypes.map(type => computed(() => checkTypeBySelected([type])))
+
   return {
     state,
     setSelection,
-    type,
-    col,
     selection,
     isSelectAnyElement,
+    isSelectRoot,
+    type,
     isSelectField,
     target,
+    col,
     checkTypeBySelected,
     isSelectGrid,
     isSelectTabs,
     isSelectCollapse,
     isSelectTable,
-    isSelectRoot,
+    isSelectSubform,
     isPc,
-    isEditModel,
-    isSelectSubform
+    isEditModel
   }
 }

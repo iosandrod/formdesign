@@ -39,14 +39,6 @@ const tabs = ref([
     ifRefs: [],
     thenRefs: []
   }
-  // 暂时放弃，后期来做
-  // {
-  //   label: '校验',
-  //   value: 'validation',
-  //   rules: [],
-  //   ifRefs: [],
-  //   thenRefs: []
-  // }
 ])
 const activeTab = ref('visible')
 const ER = inject('Everright')

@@ -350,11 +350,6 @@ const appendNodes = (node, dir, key) => {
   }
 }
 export const addContext = (node, parent, fn) => {
-  // console.log(node)
-  // if (isAddId) {
-  //   node.id = nanoid()
-  //   node.key = `${node.type}_${nanoid()}`
-  // }
   let arr = []
   const isArray = Array.isArray(parent)
   if (isArray) {

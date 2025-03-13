@@ -129,8 +129,8 @@ const handleTypeListener = ({ property, data }) => {
           {{ t('er.config.globalConfig.sync.warning') }}
         </div>
         <el-radio-group :class="[ns.e('syncType')]" v-model="radio1" class="ml-4">
-          <el-radio label="pc">pc</el-radio>
-          <el-radio label="mobile">mobile</el-radio>
+          <el-radio value="pc">pc</el-radio>
+          <el-radio value="mobile">mobile</el-radio>
         </el-radio-group>
       </div>
       <div :class="[ns.e('syncActions')]">
